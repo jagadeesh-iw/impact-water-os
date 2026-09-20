@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type {
   ComponentType,
   Dispatch,
@@ -46,6 +46,7 @@ import {
 } from 'firebase/auth';
 
 import { auth } from '@/lib/firebase';
+import { deleteRecord, getRecords, setRecord } from '@/lib/firestore';
 
 /* =========================================================
    TYPES
@@ -805,6 +806,18 @@ export default function Home() {
   const [dataReady, setDataReady] =
     useState(false);
 
+  const [firestoreReady, setFirestoreReady] =
+    useState(false);
+
+  const [firestoreError, setFirestoreError] =
+    useState('');
+
+  const projectIdsRef =
+    useRef<string[]>([]);
+
+  const taskIdsRef =
+    useRef<string[]>([]);
+
   const [projects, setProjects] =
     useState<Project[]>(seed.projects);
 
@@ -848,23 +861,9 @@ export default function Home() {
     return unsubscribe;
   }, []);
 
-  /* Load local workspace data */
+  /* Load local workspace data for modules that are not yet on Firestore */
 
   useEffect(() => {
-    setProjects(
-      load(
-        'projects',
-        seed.projects,
-      ),
-    );
-
-    setTasks(
-      load(
-        'tasks',
-        seed.tasks,
-      ),
-    );
-
     setNotes(
       load(
         'notes',
@@ -910,19 +909,233 @@ export default function Home() {
     setDataReady(true);
   }, []);
 
-  /* Local persistence */
+  /* Firestore: load Projects and Tasks after authentication */
 
   useEffect(() => {
-    if (dataReady) {
-      save('projects', projects);
+    if (!authed) {
+      setFirestoreReady(false);
+      setFirestoreError('');
+      return;
     }
-  }, [projects, dataReady]);
+
+    let cancelled = false;
+
+    const loadFirestoreWorkspace = async () => {
+      setFirestoreReady(false);
+      setFirestoreError('');
+
+      try {
+        const [projectRecords, taskRecords] =
+          await Promise.all([
+            getRecords('projects'),
+            getRecords('tasks'),
+          ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        const firestoreProjects =
+          projectRecords as unknown as Project[];
+        const firestoreTasks =
+          taskRecords as unknown as Task[];
+
+        const migrationKey = `impact:firestore-migrated:${auth.currentUser?.uid || 'unknown'}`;
+        const alreadyMigrated =
+          typeof window !== 'undefined' &&
+          localStorage.getItem(migrationKey) === 'true';
+
+        let nextProjects = firestoreProjects;
+        let nextTasks = firestoreTasks;
+
+        if (!alreadyMigrated) {
+          if (!firestoreProjects.length) {
+            nextProjects = load(
+              'projects',
+              seed.projects,
+            );
+
+            await Promise.all(
+              nextProjects.map((project) =>
+                setRecord(
+                  'projects',
+                  project.id,
+                  project as unknown as Record<string, unknown>,
+                ),
+              ),
+            );
+          }
+
+          if (!firestoreTasks.length) {
+            nextTasks = load(
+              'tasks',
+              seed.tasks,
+            );
+
+            await Promise.all(
+              nextTasks.map((task) =>
+                setRecord(
+                  'tasks',
+                  task.id,
+                  task as unknown as Record<string, unknown>,
+                ),
+              ),
+            );
+          }
+
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(
+              migrationKey,
+              'true',
+            );
+          }
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setProjects(nextProjects);
+        setTasks(nextTasks);
+
+        projectIdsRef.current = nextProjects.map(
+          (item) => item.id,
+        );
+
+        taskIdsRef.current = nextTasks.map(
+          (item) => item.id,
+        );
+
+        setFirestoreReady(true);
+      } catch (error) {
+        console.error(
+          'Firestore workspace load error:',
+          error,
+        );
+
+        if (!cancelled) {
+          setFirestoreError(
+            'Firestore is not available yet. Your existing local data is still shown. Publish the Firestore rules when we reach the security step.',
+          );
+          setFirestoreReady(false);
+        }
+      }
+    };
+
+    void loadFirestoreWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authed]);
+
+  /* Firestore persistence for Projects */
 
   useEffect(() => {
-    if (dataReady) {
-      save('tasks', tasks);
+    if (!firestoreReady) {
+      return;
     }
-  }, [tasks, dataReady]);
+
+    const syncProjects = async () => {
+      try {
+        const currentIds = projects.map(
+          (project) => project.id,
+        );
+
+        await Promise.all(
+          projects.map((project) =>
+            setRecord(
+              'projects',
+              project.id,
+              project as unknown as Record<string, unknown>,
+            ),
+          ),
+        );
+
+        const removedIds =
+          projectIdsRef.current.filter(
+            (id) =>
+              !currentIds.includes(id),
+          );
+
+        await Promise.all(
+          removedIds.map((id) =>
+            deleteRecord(
+              'projects',
+              id,
+            ),
+          ),
+        );
+
+        projectIdsRef.current = currentIds;
+      } catch (error) {
+        console.error(
+          'Firestore project sync error:',
+          error,
+        );
+        setFirestoreError(
+          'Could not save a project to Firestore. Please try again.',
+        );
+      }
+    };
+
+    void syncProjects();
+  }, [projects, firestoreReady]);
+
+  /* Firestore persistence for Tasks */
+
+  useEffect(() => {
+    if (!firestoreReady) {
+      return;
+    }
+
+    const syncTasks = async () => {
+      try {
+        const currentIds = tasks.map(
+          (task) => task.id,
+        );
+
+        await Promise.all(
+          tasks.map((task) =>
+            setRecord(
+              'tasks',
+              task.id,
+              task as unknown as Record<string, unknown>,
+            ),
+          ),
+        );
+
+        const removedIds =
+          taskIdsRef.current.filter(
+            (id) =>
+              !currentIds.includes(id),
+          );
+
+        await Promise.all(
+          removedIds.map((id) =>
+            deleteRecord(
+              'tasks',
+              id,
+            ),
+          ),
+        );
+
+        taskIdsRef.current = currentIds;
+      } catch (error) {
+        console.error(
+          'Firestore task sync error:',
+          error,
+        );
+        setFirestoreError(
+          'Could not save a task to Firestore. Please try again.',
+        );
+      }
+    };
+
+    void syncTasks();
+  }, [tasks, firestoreReady]);
+
+  /* Local persistence for remaining modules */
 
   useEffect(() => {
     if (dataReady) {
@@ -1367,6 +1580,17 @@ export default function Home() {
             </button>
           </div>
         </header>
+
+        {firestoreError && (
+          <div className="content" style={{ paddingBottom: 0 }}>
+            <div className="card" style={{ padding: 14, marginBottom: 0 }}>
+              <b>Firestore notice</b>
+              <div style={{ marginTop: 4, color: 'var(--muted)' }}>
+                {firestoreError}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="content">
           {page ===
