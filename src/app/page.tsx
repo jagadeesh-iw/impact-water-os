@@ -58,7 +58,6 @@ function Badge({children,tone='gray'}:{children:React.ReactNode;tone?:string}){r
 function priorityTone(p:Priority){return p==='Urgent'?'red':p==='High'?'orange':p==='Medium'?'yellow':'gray'}
 function statusTone(s:string){return s==='Done'||s==='Completed'||s==='Dispatched'?'green':s==='Waiting'||s==='On Hold'?'yellow':s==='Blocked'||s==='Failed'?'red':'blue'}
 
-export default function Home(){
 export default function Home() {
   const [authed, setAuthed] = useState(false);
   const [email, setEmail] = useState('');
