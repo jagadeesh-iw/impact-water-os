@@ -90,7 +90,25 @@ const logout = async () => {
   await signOut(auth);
   setAuthed(false);
 };
- if(!authed)return <Login email={email} password={password} setEmail={setEmail} setPassword={setPassword} onLogin={()=>{localStorage.setItem('impact:auth','1');setAuthed(true)}}/>;
+ if (authLoading) {
+  return (
+    <div className="login">
+      <div className="login-card">
+        <div className="brand center">
+          <div className="brand-mark">IW</div>
+          <div>
+            <b>Impact Water</b>
+            <small>E-commerce & Growth OS</small>
+          </div>
+        </div>
+        <p style={{ textAlign: 'center', marginTop: 24 }}>
+          Checking your session…
+        </p>
+      </div>
+    </div>
+  );
+}
+  if(!authed)return <Login email={email} password={password} setEmail={setEmail} setPassword={setPassword} onLogin={()=>{localStorage.setItem('impact:auth','1');setAuthed(true)}}/>;
  return <div className="app-shell">
   <aside className={'sidebar '+(mobileOpen?'open':'')}><div className="brand"><div className="brand-mark">IW</div><div className="brand-text"><b>Impact Water</b><small>Growth OS</small></div></div><div className="workspace">OPERATIONS WORKSPACE</div>{nav.map(([n,I])=><button key={n} className={'nav-item '+(page===n?'active':'')} onClick={()=>{setPage(n);setMobileOpen(false)}}><I size={18}/><span className="nav-label">{n}</span></button>)}<div className="sidebar-bottom"><div className="user-chip"><div className="avatar">J</div><div className="nav-label"><b>Jagadeesh</b><small>Founder&apos;s Office</small></div></div><button className="nav-item" onClick={logout}><X size={18}/><span className="nav-label">Log out</span></button></div></aside>
   {mobileOpen&&<div className="scrim" onClick={()=>setMobileOpen(false)}/>}<main className="main"><header className="topbar"><div className="top-left"><button className="mobile-menu btn" onClick={()=>setMobileOpen(true)}><Menu size={18}/></button><div className="crumb">{page}</div></div><div className="top-actions"><button className="search-trigger" onClick={()=>document.getElementById('global-search')?.focus()}><Search size={16}/> Search <kbd>⌘ K</kbd></button><button className="icon-btn"><Bell size={18}/><span className="dot"/></button><button className="quick-add" onClick={()=>setShowAdd(true)}><Plus size={17}/> Add</button></div></header>
