@@ -59,157 +59,446 @@ function priorityTone(p:Priority){return p==='Urgent'?'red':p==='High'?'orange':
 function statusTone(s:string){return s==='Done'||s==='Completed'||s==='Dispatched'?'green':s==='Waiting'||s==='On Hold'?'yellow':s==='Blocked'||s==='Failed'?'red':'blue'}
 
 export default function Home(){
-const [authed,setAuthed]=useState(false);
-const [email,setEmail]=useState('');
-const [password,setPassword]=useState('');
-const [authLoading,setAuthLoading]=useState(true);
-const [authError,setAuthError]=useState('');
- const [page,setPage]=useState('Dashboard'); const [query,setQuery]=useState(''); const [showAdd,setShowAdd]=useState(false); const [mobileOpen,setMobileOpen]=useState(false);
- const [projects,setProjects]=useState<Project[]>(seed.projects),[tasks,setTasks]=useState<Task[]>(seed.tasks),[notes,setNotes]=useState<Note[]>(seed.notes),[orders,setOrders]=useState<Order[]>(seed.orders),[issues,setIssues]=useState<Issue[]>(seed.issues),[campaigns,setCampaigns]=useState<Campaign[]>(seed.campaigns),[experiments,setExperiments]=useState<Experiment[]>(seed.experiments),[ecommerce,setEcommerce]=useState<Ecommerce[]>(seed.ecommerce);
- useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    setAuthed(!!user);
-    setAuthLoading(false);
-  });
+export default function Home() {
+  const [authed, setAuthed] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
 
-  setProjects(load('projects', seed.projects));
-  setTasks(load('tasks', seed.tasks));
-  setNotes(load('notes', seed.notes));
-  setOrders(load('orders', seed.orders));
-  setIssues(load('issues', seed.issues));
-  setCampaigns(load('campaigns', seed.campaigns));
-  setExperiments(load('experiments', seed.experiments));
-  setEcommerce(load('ecommerce', seed.ecommerce));
+  const [page, setPage] = useState('Dashboard');
+  const [query, setQuery] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  return unsubscribe;
-}, []);
- useEffect(()=>{save('projects',projects)},[projects]);useEffect(()=>{save('tasks',tasks)},[tasks]);useEffect(()=>{save('notes',notes)},[notes]);useEffect(()=>{save('orders',orders)},[orders]);useEffect(()=>{save('issues',issues)},[issues]);useEffect(()=>{save('campaigns',campaigns)},[campaigns]);useEffect(()=>{save('experiments',experiments)},[experiments]);useEffect(()=>{save('ecommerce',ecommerce)},[ecommerce]);
- const dueToday=tasks.filter(t=>t.due===today()&&t.status!=='Done'&&t.status!=='Cancelled'); const overdue=tasks.filter(t=>t.due<today()&&t.status!=='Done'&&t.status!=='Cancelled'); const waiting=tasks.filter(t=>t.status==='Waiting'); const activeProjects=projects.filter(p=>p.status==='Active');
- const projectProgress=(id:string)=>{const ts=tasks.filter(t=>t.projectId===id); if(!ts.length)return 0; return Math.round(ts.filter(t=>t.status==='Done').length/ts.length*100)};
-const logout = async () => {
-  await signOut(auth);
-  setAuthed(false);
-};
- if (authLoading) {
-  return (
-    <div className="login">
-      <div className="login-card">
-        <div className="brand center">
-          <div className="brand-mark">IW</div>
-          <div>
-            <b>Impact Water</b>
-            <small>E-commerce & Growth OS</small>
-          </div>
-        </div>
-        <p style={{ textAlign: 'center', marginTop: 24 }}>
-          Checking your session…
-        </p>
-      </div>
-    </div>
+  const [projects, setProjects] = useState<Project[]>(seed.projects);
+  const [tasks, setTasks] = useState<Task[]>(seed.tasks);
+  const [notes, setNotes] = useState<Note[]>(seed.notes);
+  const [orders, setOrders] = useState<Order[]>(seed.orders);
+  const [issues, setIssues] = useState<Issue[]>(seed.issues);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(seed.campaigns);
+  const [experiments, setExperiments] = useState<Experiment[]>(seed.experiments);
+  const [ecommerce, setEcommerce] = useState<Ecommerce[]>(seed.ecommerce);
+
+  /*
+   * Firebase Authentication
+   *
+   * Firebase is now the source of truth for whether the user
+   * is logged in. We do not use localStorage for authentication.
+   */
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthed(Boolean(user));
+      setAuthLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  /*
+   * Temporary local data persistence.
+   *
+   * This keeps the current application working while Firestore
+   * is being connected. We will replace this with Firestore
+   * persistence next.
+   */
+  useEffect(() => {
+    setProjects(load('projects', seed.projects));
+    setTasks(load('tasks', seed.tasks));
+    setNotes(load('notes', seed.notes));
+    setOrders(load('orders', seed.orders));
+    setIssues(load('issues', seed.issues));
+    setCampaigns(load('campaigns', seed.campaigns));
+    setExperiments(load('experiments', seed.experiments));
+    setEcommerce(load('ecommerce', seed.ecommerce));
+  }, []);
+
+  useEffect(() => {
+    save('projects', projects);
+  }, [projects]);
+
+  useEffect(() => {
+    save('tasks', tasks);
+  }, [tasks]);
+
+  useEffect(() => {
+    save('notes', notes);
+  }, [notes]);
+
+  useEffect(() => {
+    save('orders', orders);
+  }, [orders]);
+
+  useEffect(() => {
+    save('issues', issues);
+  }, [issues]);
+
+  useEffect(() => {
+    save('campaigns', campaigns);
+  }, [campaigns]);
+
+  useEffect(() => {
+    save('experiments', experiments);
+  }, [experiments]);
+
+  useEffect(() => {
+    save('ecommerce', ecommerce);
+  }, [ecommerce]);
+
+  const handleLogin = async () => {
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail || !password) {
+      setAuthError('Please enter your email and password.');
+      return;
+    }
+
+    setAuthError('');
+
+    try {
+      await signInWithEmailAndPassword(auth, cleanEmail, password);
+      setPassword('');
+    } catch (error: unknown) {
+      console.error('Firebase login error:', error);
+
+      const code =
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error
+          ? String((error as { code?: unknown }).code)
+          : '';
+
+      if (
+        code === 'auth/invalid-credential' ||
+        code === 'auth/wrong-password' ||
+        code === 'auth/user-not-found'
+      ) {
+        setAuthError('Incorrect email or password.');
+      } else if (code === 'auth/too-many-requests') {
+        setAuthError(
+          'Too many login attempts. Please wait a few minutes and try again.'
+        );
+      } else if (code === 'auth/invalid-email') {
+        setAuthError('Please enter a valid email address.');
+      } else {
+        setAuthError(
+          'Unable to sign in right now. Please check your Firebase configuration.'
+        );
+      }
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setAuthed(false);
+      setEmail('');
+      setPassword('');
+      setAuthError('');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const dueToday = tasks.filter(
+    (t) =>
+      t.due === today() &&
+      t.status !== 'Done' &&
+      t.status !== 'Cancelled'
   );
-}
-  if(!authed)return <Login email={email} password={password} setEmail={setEmail} setPassword={setPassword} onLogin={()=>{localStorage.setItem('impact:auth','1');setAuthed(true)}}/>;
- return <div className="app-shell">
-  <aside className={'sidebar '+(mobileOpen?'open':'')}><div className="brand"><div className="brand-mark">IW</div><div className="brand-text"><b>Impact Water</b><small>Growth OS</small></div></div><div className="workspace">OPERATIONS WORKSPACE</div>{nav.map(([n,I])=><button key={n} className={'nav-item '+(page===n?'active':'')} onClick={()=>{setPage(n);setMobileOpen(false)}}><I size={18}/><span className="nav-label">{n}</span></button>)}<div className="sidebar-bottom"><div className="user-chip"><div className="avatar">J</div><div className="nav-label"><b>Jagadeesh</b><small>Founder&apos;s Office</small></div></div><button className="nav-item" onClick={logout}><X size={18}/><span className="nav-label">Log out</span></button></div></aside>
-  {mobileOpen&&<div className="scrim" onClick={()=>setMobileOpen(false)}/>}<main className="main"><header className="topbar"><div className="top-left"><button className="mobile-menu btn" onClick={()=>setMobileOpen(true)}><Menu size={18}/></button><div className="crumb">{page}</div></div><div className="top-actions"><button className="search-trigger" onClick={()=>document.getElementById('global-search')?.focus()}><Search size={16}/> Search <kbd>⌘ K</kbd></button><button className="icon-btn"><Bell size={18}/><span className="dot"/></button><button className="quick-add" onClick={()=>setShowAdd(true)}><Plus size={17}/> Add</button></div></header>
-  <div className="content">{page==='Dashboard'&&<Dashboard tasks={tasks} projects={projects} dueToday={dueToday} overdue={overdue} waiting={waiting} activeProjects={activeProjects} projectProgress={projectProgress} setTasks={setTasks} setPage={setPage}/>} {page==='Tasks'&&<TasksPage tasks={tasks} projects={projects} setTasks={setTasks} query={query}/>} {page==='Projects'&&<ProjectsPage projects={projects} tasks={tasks} setProjects={setProjects} projectProgress={projectProgress}/>} {page==='E-Commerce'&&<EcommercePage ecommerce={ecommerce} setEcommerce={setEcommerce} orders={orders} setOrders={setOrders}/>} {page==='Operations'&&<OperationsPage orders={orders} issues={issues} setIssues={setIssues}/>} {page==='CRM'&&<CampaignPage campaigns={campaigns} setCampaigns={setCampaigns}/>} {page==='Growth'&&<GrowthPage experiments={experiments} setExperiments={setExperiments}/>} {page==='Website'&&<WebsitePage tasks={tasks} setTasks={setTasks} projects={projects}/>} {page==='Reports'&&<Reports tasks={tasks} projects={projects} orders={orders} issues={issues} campaigns={campaigns} experiments={experiments}/>} {page==='Notes'&&<NotesPage notes={notes} setNotes={setNotes} query={query}/>} {page==='Settings'&&<SettingsPage/>}</div></main>
-  <div className="global-search"><input id="global-search" placeholder="Search tasks, projects, orders, notes…" value={query} onChange={e=>setQuery(e.target.value)}/></div>
-  {showAdd&&<QuickAdd onClose={()=>setShowAdd(false)} setPage={setPage} setTasks={setTasks} setProjects={setProjects} setOrders={setOrders} setNotes={setNotes} setIssues={setIssues} setCampaigns={setCampaigns} setExperiments={setExperiments}/>} 
- </div>
-}
 
-function Login({
-  email,
-  password,
-  setEmail,
-  setPassword,
-  authError,
-  onLogin,
-}: {
-  email: string;
-  password: string;
-  setEmail: (x: string) => void;
-  setPassword: (x: string) => void;
-  authError: string;
-  onLogin: () => void;
-}) {
-  return (
-    <div className="login">
-      <div className="login-card">
-        <div className="brand center">
-          <div className="brand-mark">IW</div>
-          <div>
-            <b>Impact Water</b>
-            <small>E-commerce & Growth OS</small>
+  const overdue = tasks.filter(
+    (t) =>
+      t.due < today() &&
+      t.status !== 'Done' &&
+      t.status !== 'Cancelled'
+  );
+
+  const waiting = tasks.filter((t) => t.status === 'Waiting');
+
+  const activeProjects = projects.filter(
+    (p) => p.status === 'Active'
+  );
+
+  const projectProgress = (id: string) => {
+    const projectTasks = tasks.filter((t) => t.projectId === id);
+
+    if (!projectTasks.length) {
+      return 0;
+    }
+
+    return Math.round(
+      (projectTasks.filter((t) => t.status === 'Done').length /
+        projectTasks.length) *
+        100
+    );
+  };
+
+  if (authLoading) {
+    return (
+      <div className="login">
+        <div className="login-card">
+          <div className="brand center">
+            <div className="brand-mark">IW</div>
+
+            <div>
+              <b>Impact Water</b>
+              <small>E-commerce & Growth OS</small>
+            </div>
           </div>
-        </div>
 
-        <div className="eyebrow">INTERNAL WORKSPACE</div>
-
-        <h1>Run your day from one place.</h1>
-
-        <p>
-          Orders, operations, growth, CRM and projects — designed around the
-          work you actually do.
-        </p>
-
-        <label>
-          Email
-          <input
-            className="input"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="you@impactwater.in"
-          />
-        </label>
-
-        <label>
-          Password
-          <input
-            className="input"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
-            onKeyDown={e => {
-              if (e.key === 'Enter') onLogin();
-            }}
-          />
-        </label>
-
-        {authError && (
-          <div
+          <p
             style={{
-              marginTop: 10,
-              padding: '10px 12px',
-              borderRadius: 8,
-              background: '#fef2f2',
-              color: '#b91c1c',
-              fontSize: 13,
+              textAlign: 'center',
+              marginTop: 24,
             }}
           >
-            {authError}
-          </div>
-        )}
-
-        <button
-          className="btn btn-primary wide"
-          onClick={onLogin}
-          disabled={!email || !password}
-        >
-          Sign in
-        </button>
-
-        <div className="demo-note">
-          <CircleDot size={14} />
-          Secure login powered by Firebase Authentication.
+            Checking your session…
+          </p>
         </div>
       </div>
+    );
+  }
+
+  if (!authed) {
+    return (
+      <Login
+        email={email}
+        password={password}
+        setEmail={setEmail}
+        setPassword={setPassword}
+        authError={authError}
+        onLogin={handleLogin}
+      />
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      <aside
+        className={
+          'sidebar ' + (mobileOpen ? 'open' : '')
+        }
+      >
+        <div className="brand">
+          <div className="brand-mark">IW</div>
+
+          <div className="brand-text">
+            <b>Impact Water</b>
+            <small>Growth OS</small>
+          </div>
+        </div>
+
+        <div className="workspace">
+          OPERATIONS WORKSPACE
+        </div>
+
+        {nav.map(([n, I]) => (
+          <button
+            key={n}
+            className={
+              'nav-item ' +
+              (page === n ? 'active' : '')
+            }
+            onClick={() => {
+              setPage(n);
+              setMobileOpen(false);
+            }}
+          >
+            <I size={18} />
+            <span className="nav-label">{n}</span>
+          </button>
+        ))}
+
+        <div className="sidebar-bottom">
+          <div className="user-chip">
+            <div className="avatar">J</div>
+
+            <div className="nav-label">
+              <b>Jagadeesh</b>
+              <small>Founder&apos;s Office</small>
+            </div>
+          </div>
+
+          <button
+            className="nav-item"
+            onClick={logout}
+          >
+            <X size={18} />
+            <span className="nav-label">Log out</span>
+          </button>
+        </div>
+      </aside>
+
+      {mobileOpen && (
+        <div
+          className="scrim"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <main className="main">
+        <header className="topbar">
+          <div className="top-left">
+            <button
+              className="mobile-menu btn"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu size={18} />
+            </button>
+
+            <div className="crumb">{page}</div>
+          </div>
+
+          <div className="top-actions">
+            <button
+              className="search-trigger"
+              onClick={() =>
+                document
+                  .getElementById('global-search')
+                  ?.focus()
+              }
+            >
+              <Search size={16} />
+              Search
+              <kbd>⌘ K</kbd>
+            </button>
+
+            <button className="icon-btn">
+              <Bell size={18} />
+              <span className="dot" />
+            </button>
+
+            <button
+              className="quick-add"
+              onClick={() => setShowAdd(true)}
+            >
+              <Plus size={17} />
+              Add
+            </button>
+          </div>
+        </header>
+
+        <div className="content">
+          {page === 'Dashboard' && (
+            <Dashboard
+              tasks={tasks}
+              projects={projects}
+              dueToday={dueToday}
+              overdue={overdue}
+              waiting={waiting}
+              activeProjects={activeProjects}
+              projectProgress={projectProgress}
+              setTasks={setTasks}
+              setPage={setPage}
+            />
+          )}
+
+          {page === 'Tasks' && (
+            <TasksPage
+              tasks={tasks}
+              projects={projects}
+              setTasks={setTasks}
+              query={query}
+            />
+          )}
+
+          {page === 'Projects' && (
+            <ProjectsPage
+              projects={projects}
+              tasks={tasks}
+              setProjects={setProjects}
+              projectProgress={projectProgress}
+            />
+          )}
+
+          {page === 'E-Commerce' && (
+            <EcommercePage
+              ecommerce={ecommerce}
+              setEcommerce={setEcommerce}
+              orders={orders}
+              setOrders={setOrders}
+            />
+          )}
+
+          {page === 'Operations' && (
+            <OperationsPage
+              orders={orders}
+              issues={issues}
+              setIssues={setIssues}
+            />
+          )}
+
+          {page === 'CRM' && (
+            <CampaignPage
+              campaigns={campaigns}
+              setCampaigns={setCampaigns}
+            />
+          )}
+
+          {page === 'Growth' && (
+            <GrowthPage
+              experiments={experiments}
+              setExperiments={setExperiments}
+            />
+          )}
+
+          {page === 'Website' && (
+            <WebsitePage
+              tasks={tasks}
+              setTasks={setTasks}
+              projects={projects}
+            />
+          )}
+
+          {page === 'Reports' && (
+            <Reports
+              tasks={tasks}
+              projects={projects}
+              orders={orders}
+              issues={issues}
+              campaigns={campaigns}
+              experiments={experiments}
+            />
+          )}
+
+          {page === 'Notes' && (
+            <NotesPage
+              notes={notes}
+              setNotes={setNotes}
+              query={query}
+            />
+          )}
+
+          {page === 'Settings' && <SettingsPage />}
+        </div>
+      </main>
+
+      <div className="global-search">
+        <input
+          id="global-search"
+          placeholder="Search tasks, projects, orders, notes…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {showAdd && (
+        <QuickAdd
+          onClose={() => setShowAdd(false)}
+          setPage={setPage}
+          setTasks={setTasks}
+          setProjects={setProjects}
+          setOrders={setOrders}
+          setNotes={setNotes}
+          setIssues={setIssues}
+          setCampaigns={setCampaigns}
+          setExperiments={setExperiments}
+        />
+      )}
     </div>
   );
 }
-
 function PageTitle({eyebrow,title,desc,action}:{eyebrow:string;title:string;desc?:string;action?:React.ReactNode}){return <div className="page-title"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1>{desc&&<p>{desc}</p>}</div>{action}</div>}
 function Stat({label,value,icon:Icon,tone='blue',sub}:{label:string;value:string|number;icon:any;tone?:string;sub?:string}){return <div className="stat card"><div className={'stat-icon '+tone}><Icon size={18}/></div><div><div className="stat-value">{value}</div><div className="stat-label">{label}</div>{sub&&<div className="stat-sub">{sub}</div>}</div></div>}
 function Dashboard({tasks,projects,dueToday,overdue,waiting,activeProjects,projectProgress,setTasks,setPage}:{tasks:Task[];projects:Project[];dueToday:Task[];overdue:Task[];waiting:Task[];activeProjects:Project[];projectProgress:(id:string)=>number;setTasks:React.Dispatch<React.SetStateAction<Task[]>>;setPage:(x:string)=>void}){const priority=tasks.filter(t=>t.status!=='Done'&&t.status!=='Cancelled').sort((a,b)=>priorities.indexOf(a.priority)-priorities.indexOf(b.priority)).slice(0,4);return <><PageTitle eyebrow="Sunday · 20 September 2026" title="Good evening, Jagadeesh." desc="Here’s what needs your attention today." action={<button className="btn btn-primary" onClick={()=>setPage('Tasks')}><ClipboardList size={16}/> Open task board</button>}/><div className="stats grid-6"><Stat label="Open tasks" value={tasks.filter(t=>!['Done','Cancelled'].includes(t.status)).length} icon={ClipboardList}/><Stat label="Due today" value={dueToday.length} icon={Clock3} tone="orange"/><Stat label="Overdue" value={overdue.length} icon={AlertCircle} tone="red"/><Stat label="Waiting" value={waiting.length} icon={Truck} tone="yellow"/><Stat label="Completed today" value={tasks.filter(t=>t.status==='Done'&&t.updated===today()).length} icon={CheckCircle2} tone="green"/><Stat label="Active projects" value={activeProjects.length} icon={FolderKanban}/></div><div className="dashboard-grid"><section className="card section"><SectionHead title="Needs attention" icon={Zap}/>{priority.map(t=><TaskRow key={t.id} task={t} onDone={()=>setTasks(ts=>ts.map(x=>x.id===t.id?{...x,status:'Done',updated:today()}:x))}/>)}</section><section className="card section"><SectionHead title="My tasks today" icon={ClipboardList}/>{dueToday.length?dueToday.map(t=><TaskRow key={t.id} task={t} onDone={()=>setTasks(ts=>ts.map(x=>x.id===t.id?{...x,status:'Done',updated:today()}:x))}/>):<Empty text="Nothing due today."/>}</section></div><div className="dashboard-grid"><section className="card section"><SectionHead title="Active projects" icon={FolderKanban} action={<button className="link" onClick={()=>setPage('Projects')}>View all</button>}/>{activeProjects.map(p=><div className="project-row" key={p.id}><div className="project-main"><div className="project-icon"><BriefcaseBusiness size={16}/></div><div><b>{p.name}</b><small>{p.category} · Due {p.due}</small></div></div><div className="progress-wrap"><div className="progress-line"><span style={{width:projectProgress(p.id)+'%'}}/></div><small>{projectProgress(p.id)}%</small></div></div>)}</section><section className="card section"><SectionHead title="Waiting on others" icon={Truck}/>{waiting.length?waiting.map(t=><div className="waiting-row" key={t.id}><div><b>{t.title}</b><small>{t.description||'Waiting for another team or partner.'}</small></div><Badge tone="yellow">Waiting</Badge></div>):<Empty text="No waiting tasks."/>}</section></div></>}
