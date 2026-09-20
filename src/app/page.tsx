@@ -86,7 +86,10 @@ const [authError,setAuthError]=useState('');
  useEffect(()=>{save('projects',projects)},[projects]);useEffect(()=>{save('tasks',tasks)},[tasks]);useEffect(()=>{save('notes',notes)},[notes]);useEffect(()=>{save('orders',orders)},[orders]);useEffect(()=>{save('issues',issues)},[issues]);useEffect(()=>{save('campaigns',campaigns)},[campaigns]);useEffect(()=>{save('experiments',experiments)},[experiments]);useEffect(()=>{save('ecommerce',ecommerce)},[ecommerce]);
  const dueToday=tasks.filter(t=>t.due===today()&&t.status!=='Done'&&t.status!=='Cancelled'); const overdue=tasks.filter(t=>t.due<today()&&t.status!=='Done'&&t.status!=='Cancelled'); const waiting=tasks.filter(t=>t.status==='Waiting'); const activeProjects=projects.filter(p=>p.status==='Active');
  const projectProgress=(id:string)=>{const ts=tasks.filter(t=>t.projectId===id); if(!ts.length)return 0; return Math.round(ts.filter(t=>t.status==='Done').length/ts.length*100)};
- const logout=()=>{localStorage.removeItem('impact:auth');setAuthed(false)};
+const logout = async () => {
+  await signOut(auth);
+  setAuthed(false);
+};
  if(!authed)return <Login email={email} password={password} setEmail={setEmail} setPassword={setPassword} onLogin={()=>{localStorage.setItem('impact:auth','1');setAuthed(true)}}/>;
  return <div className="app-shell">
   <aside className={'sidebar '+(mobileOpen?'open':'')}><div className="brand"><div className="brand-mark">IW</div><div className="brand-text"><b>Impact Water</b><small>Growth OS</small></div></div><div className="workspace">OPERATIONS WORKSPACE</div>{nav.map(([n,I])=><button key={n} className={'nav-item '+(page===n?'active':'')} onClick={()=>{setPage(n);setMobileOpen(false)}}><I size={18}/><span className="nav-label">{n}</span></button>)}<div className="sidebar-bottom"><div className="user-chip"><div className="avatar">J</div><div className="nav-label"><b>Jagadeesh</b><small>Founder&apos;s Office</small></div></div><button className="nav-item" onClick={logout}><X size={18}/><span className="nav-label">Log out</span></button></div></aside>
