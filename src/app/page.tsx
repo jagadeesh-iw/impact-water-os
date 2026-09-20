@@ -530,3 +530,83 @@ function SettingsPage(){return <><PageTitle eyebrow="Workspace" title="Settings"
 
 function QuickAdd({onClose,setPage,setTasks,setProjects,setOrders,setNotes,setIssues,setCampaigns,setExperiments}:{onClose:()=>void;setPage:(x:string)=>void;setTasks:any;setProjects:any;setOrders:any;setNotes:any;setIssues:any;setCampaigns:any;setExperiments:any}){const add=(type:string)=>{if(type==='Task'){setTasks((xs:Task[])=>[{id:uid(),title:'New task',description:'',projectId:'p1',status:'To Do',priority:'Medium',due:today(),tags:[],subtasks:[],created:today(),updated:today()},...xs]);setPage('Tasks')}if(type==='Project'){setProjects((xs:Project[])=>[{id:uid(),name:'New project',description:'',status:'Planning',priority:'Medium',category:'E-Commerce',due:today(),goals:''},...xs]);setPage('Projects')}if(type==='Order / RO'){setOrders((xs:Order[])=>[{id:'RO-'+Math.floor(Math.random()*9000+1000),marketplace:'Other',date:today(),product:'',qty:0,amount:0,invoice:'Pending',shipment:'Not Started',overall:'New',priority:'Medium',owner:'',notes:''},...xs]);setPage('E-Commerce')}if(type==='CRM Campaign'){setCampaigns((xs:Campaign[])=>[{id:uid(),name:'New campaign',type:'Reorder',audience:'',start:today(),end:today(),status:'Idea',targeted:0,sent:0,delivered:0,clicks:0,orders:0,revenue:0,notes:'',results:'',learnings:''},...xs]);setPage('CRM')}if(type==='Growth Experiment'){setExperiments((xs:Experiment[])=>[{id:uid(),name:'New experiment',hypothesis:'',problem:'',action:'',channel:'Website',start:today(),end:today(),metric:'Orders',baseline:'',target:'',result:'',learning:'',decision:'Continue'},...xs]);setPage('Growth')}if(type==='Note'){setNotes((xs:Note[])=>[{id:uid(),title:'New note',body:'',tag:'General',pinned:false,updated:today()},...xs]);setPage('Notes')}if(type==='Issue'){setIssues((xs:Issue[])=>[{id:uid(),title:'New operational issue',order:'',category:'Internal',owner:'',priority:'Medium',status:'Open',due:today(),resolution:'',notes:''},...xs]);setPage('Operations')}onClose()};return <div className="modal-backdrop" onMouseDown={onClose}><div className="quick-menu" onMouseDown={e=>e.stopPropagation()}><div className="quick-head"><div><b>Quick add</b><small>Create something without leaving your workflow.</small></div><button className="icon-btn" onClick={onClose}><X size={18}/></button></div>{['Task','Project','Order / RO','CRM Campaign','Growth Experiment','Note','Issue'].map(x=><button className="quick-option" key={x} onClick={()=>add(x)}><Plus size={17}/><span>{x}</span><ChevronDown size={15}/></button>)}</div></div>}
 function Modal({title,onClose,children}:{title:string;onClose:()=>void;children:React.ReactNode}){return <div className="modal-backdrop" onMouseDown={onClose}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><b>{title}</b><small>Changes are saved to this workspace.</small></div><button className="icon-btn" onClick={onClose}><X size={18}/></button></div>{children}</div></div>}
+function Login({
+  email,
+  password,
+  setEmail,
+  setPassword,
+  authError,
+  onLogin,
+}: {
+  email: string;
+  password: string;
+  setEmail: (value: string) => void;
+  setPassword: (value: string) => void;
+  authError: string;
+  onLogin: () => void;
+}) {
+  return (
+    <main className="login-shell">
+      <div className="login-card">
+        <div className="login-brand">
+          <div className="brand-mark">IW</div>
+          <div>
+            <div className="login-brand-name">Impact Water</div>
+            <div className="login-brand-subtitle">E-commerce & Growth OS</div>
+          </div>
+        </div>
+
+        <div className="login-heading">
+          <h1>Welcome back</h1>
+          <p>Sign in to continue to your workspace.</p>
+        </div>
+
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            onLogin();
+          }}
+          className="login-form"
+        >
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@impactwater.in"
+              autoComplete="email"
+              required
+            />
+          </label>
+
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              required
+            />
+          </label>
+
+          {authError && (
+            <div className="login-error">
+              {authError}
+            </div>
+          )}
+
+          <button type="submit" className="primary-button">
+            Sign in
+          </button>
+        </form>
+
+        <div className="login-footer">
+          Internal Impact Water workspace
+        </div>
+      </div>
+    </main>
+  );
+}
