@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import {
   Activity, AlertCircle, BarChart3, Bell, BookOpen, Boxes, BriefcaseBusiness, CheckCircle2,
   ChevronDown, CircleDot, ClipboardList, Clock3, FileText, Filter, FolderKanban, Gauge,
