@@ -118,7 +118,97 @@ const logout = async () => {
  </div>
 }
 
-function Login({email,password,setEmail,setPassword,onLogin}:{email:string;password:string;setEmail:(x:string)=>void;setPassword:(x:string)=>void;onLogin:()=>void}){return <div className="login"><div className="login-card"><div className="brand center"><div className="brand-mark">IW</div><div><b>Impact Water</b><small>E-commerce & Growth OS</small></div></div><div className="eyebrow">INTERNAL WORKSPACE</div><h1>Run your day from one place.</h1><p>Orders, operations, growth, CRM and projects — designed around the work you actually do.</p><label>Email<input className="input" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@impactwater.in"/></label><label>Password<input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"/></label><button className="btn btn-primary wide" onClick={onLogin}>Sign in</button><div className="demo-note"><CircleDot size={14}/> Demo mode — data is stored locally until Supabase is configured.</div></div></div>}
+function Login({
+  email,
+  password,
+  setEmail,
+  setPassword,
+  authError,
+  onLogin,
+}: {
+  email: string;
+  password: string;
+  setEmail: (x: string) => void;
+  setPassword: (x: string) => void;
+  authError: string;
+  onLogin: () => void;
+}) {
+  return (
+    <div className="login">
+      <div className="login-card">
+        <div className="brand center">
+          <div className="brand-mark">IW</div>
+          <div>
+            <b>Impact Water</b>
+            <small>E-commerce & Growth OS</small>
+          </div>
+        </div>
+
+        <div className="eyebrow">INTERNAL WORKSPACE</div>
+
+        <h1>Run your day from one place.</h1>
+
+        <p>
+          Orders, operations, growth, CRM and projects — designed around the
+          work you actually do.
+        </p>
+
+        <label>
+          Email
+          <input
+            className="input"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="you@impactwater.in"
+          />
+        </label>
+
+        <label>
+          Password
+          <input
+            className="input"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="••••••••"
+            onKeyDown={e => {
+              if (e.key === 'Enter') onLogin();
+            }}
+          />
+        </label>
+
+        {authError && (
+          <div
+            style={{
+              marginTop: 10,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: '#fef2f2',
+              color: '#b91c1c',
+              fontSize: 13,
+            }}
+          >
+            {authError}
+          </div>
+        )}
+
+        <button
+          className="btn btn-primary wide"
+          onClick={onLogin}
+          disabled={!email || !password}
+        >
+          Sign in
+        </button>
+
+        <div className="demo-note">
+          <CircleDot size={14} />
+          Secure login powered by Firebase Authentication.
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function PageTitle({eyebrow,title,desc,action}:{eyebrow:string;title:string;desc?:string;action?:React.ReactNode}){return <div className="page-title"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1>{desc&&<p>{desc}</p>}</div>{action}</div>}
 function Stat({label,value,icon:Icon,tone='blue',sub}:{label:string;value:string|number;icon:any;tone?:string;sub?:string}){return <div className="stat card"><div className={'stat-icon '+tone}><Icon size={18}/></div><div><div className="stat-value">{value}</div><div className="stat-label">{label}</div>{sub&&<div className="stat-sub">{sub}</div>}</div></div>}
