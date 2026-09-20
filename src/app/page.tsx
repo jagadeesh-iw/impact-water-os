@@ -59,7 +59,11 @@ function priorityTone(p:Priority){return p==='Urgent'?'red':p==='High'?'orange':
 function statusTone(s:string){return s==='Done'||s==='Completed'||s==='Dispatched'?'green':s==='Waiting'||s==='On Hold'?'yellow':s==='Blocked'||s==='Failed'?'red':'blue'}
 
 export default function Home(){
- const [authed,setAuthed]=useState(false); const [email,setEmail]=useState(''); const [password,setPassword]=useState('');
+const [authed,setAuthed]=useState(false);
+const [email,setEmail]=useState('');
+const [password,setPassword]=useState('');
+const [authLoading,setAuthLoading]=useState(true);
+const [authError,setAuthError]=useState('');
  const [page,setPage]=useState('Dashboard'); const [query,setQuery]=useState(''); const [showAdd,setShowAdd]=useState(false); const [mobileOpen,setMobileOpen]=useState(false);
  const [projects,setProjects]=useState<Project[]>(seed.projects),[tasks,setTasks]=useState<Task[]>(seed.tasks),[notes,setNotes]=useState<Note[]>(seed.notes),[orders,setOrders]=useState<Order[]>(seed.orders),[issues,setIssues]=useState<Issue[]>(seed.issues),[campaigns,setCampaigns]=useState<Campaign[]>(seed.campaigns),[experiments,setExperiments]=useState<Experiment[]>(seed.experiments),[ecommerce,setEcommerce]=useState<Ecommerce[]>(seed.ecommerce);
  useEffect(()=>{if(localStorage.getItem('impact:auth')==='1')setAuthed(true); setProjects(load('projects',seed.projects));setTasks(load('tasks',seed.tasks));setNotes(load('notes',seed.notes));setOrders(load('orders',seed.orders));setIssues(load('issues',seed.issues));setCampaigns(load('campaigns',seed.campaigns));setExperiments(load('experiments',seed.experiments));setEcommerce(load('ecommerce',seed.ecommerce));},[]);
