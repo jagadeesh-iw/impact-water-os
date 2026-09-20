@@ -66,7 +66,23 @@ const [authLoading,setAuthLoading]=useState(true);
 const [authError,setAuthError]=useState('');
  const [page,setPage]=useState('Dashboard'); const [query,setQuery]=useState(''); const [showAdd,setShowAdd]=useState(false); const [mobileOpen,setMobileOpen]=useState(false);
  const [projects,setProjects]=useState<Project[]>(seed.projects),[tasks,setTasks]=useState<Task[]>(seed.tasks),[notes,setNotes]=useState<Note[]>(seed.notes),[orders,setOrders]=useState<Order[]>(seed.orders),[issues,setIssues]=useState<Issue[]>(seed.issues),[campaigns,setCampaigns]=useState<Campaign[]>(seed.campaigns),[experiments,setExperiments]=useState<Experiment[]>(seed.experiments),[ecommerce,setEcommerce]=useState<Ecommerce[]>(seed.ecommerce);
- useEffect(()=>{if(localStorage.getItem('impact:auth')==='1')setAuthed(true); setProjects(load('projects',seed.projects));setTasks(load('tasks',seed.tasks));setNotes(load('notes',seed.notes));setOrders(load('orders',seed.orders));setIssues(load('issues',seed.issues));setCampaigns(load('campaigns',seed.campaigns));setExperiments(load('experiments',seed.experiments));setEcommerce(load('ecommerce',seed.ecommerce));},[]);
+ useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    setAuthed(!!user);
+    setAuthLoading(false);
+  });
+
+  setProjects(load('projects', seed.projects));
+  setTasks(load('tasks', seed.tasks));
+  setNotes(load('notes', seed.notes));
+  setOrders(load('orders', seed.orders));
+  setIssues(load('issues', seed.issues));
+  setCampaigns(load('campaigns', seed.campaigns));
+  setExperiments(load('experiments', seed.experiments));
+  setEcommerce(load('ecommerce', seed.ecommerce));
+
+  return unsubscribe;
+}, []);
  useEffect(()=>{save('projects',projects)},[projects]);useEffect(()=>{save('tasks',tasks)},[tasks]);useEffect(()=>{save('notes',notes)},[notes]);useEffect(()=>{save('orders',orders)},[orders]);useEffect(()=>{save('issues',issues)},[issues]);useEffect(()=>{save('campaigns',campaigns)},[campaigns]);useEffect(()=>{save('experiments',experiments)},[experiments]);useEffect(()=>{save('ecommerce',ecommerce)},[ecommerce]);
  const dueToday=tasks.filter(t=>t.due===today()&&t.status!=='Done'&&t.status!=='Cancelled'); const overdue=tasks.filter(t=>t.due<today()&&t.status!=='Done'&&t.status!=='Cancelled'); const waiting=tasks.filter(t=>t.status==='Waiting'); const activeProjects=projects.filter(p=>p.status==='Active');
  const projectProgress=(id:string)=>{const ts=tasks.filter(t=>t.projectId===id); if(!ts.length)return 0; return Math.round(ts.filter(t=>t.status==='Done').length/ts.length*100)};
