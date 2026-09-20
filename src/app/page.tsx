@@ -5333,32 +5333,55 @@ function Modal({
   onClose: () => void;
   children: ReactNode;
 }) {
-  return (
-    <div className="modal">
-      <div className="modal-card">
-        <div className="modal-head">
-          <div>
-            <b>
-              {title}
-            </b>
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
 
-            <small>
-              Changes are saved
-              to this workspace.
-            </small>
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKey);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="iw-modal-overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="iw-modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
+        <div className="iw-modal-head">
+          <div>
+            <b>{title}</b>
+            <small>Changes are saved to this workspace.</small>
           </div>
 
           <button
             className="icon-btn"
             onClick={onClose}
+            aria-label="Close"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="modal-body">
-          {children}
-        </div>
+        <div className="iw-modal-body">{children}</div>
       </div>
     </div>
   );
@@ -5378,114 +5401,113 @@ function Login({
 }: {
   email: string;
   password: string;
-  setEmail: (
-    value: string,
-  ) => void;
-  setPassword: (
-    value: string,
-  ) => void;
+  setEmail: (value: string) => void;
+  setPassword: (value: string) => void;
   authError: string;
   onLogin: () => void;
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
-    <main className="login-page">
-      <div className="login-card">
-        <div className="login-brand">
-          <div className="logo-mark">
-            IW
+    <main className="iw-login">
+      <section className="iw-login-hero">
+        <div className="iw-login-hero-inner">
+          <div className="iw-login-brand light">
+            <div className="iw-login-logo">IW</div>
+            <span>Impact Water</span>
           </div>
 
-          <div>
-            <div className="login-brand-name">
-              Impact Water
-            </div>
-
-            <div className="login-brand-subtitle">
-              E-commerce & Growth
-              OS
-            </div>
-          </div>
-        </div>
-
-        <div className="login-heading">
-          <h1>
-            Welcome back
-          </h1>
+          <h2>
+            Run e-commerce, operations and growth from one place.
+          </h2>
 
           <p>
-            Sign in to continue
-            to your workspace.
+            Track marketplace orders, close operational issues and
+            plan retention campaigns without switching tools.
           </p>
+
+          <ul className="iw-login-points">
+            <li>Marketplace and RO tracking</li>
+            <li>Task and project management</li>
+            <li>CRM campaigns and growth experiments</li>
+          </ul>
         </div>
 
-        <form
-          onSubmit={(
-            event,
-          ) => {
-            event.preventDefault();
-            onLogin();
-          }}
-          className="login-form"
-        >
-          <label>
-            Email
+        <div className="iw-login-bubble b1" />
+        <div className="iw-login-bubble b2" />
+        <div className="iw-login-bubble b3" />
+      </section>
 
-            <input
-              type="email"
-              value={email}
-              onChange={(
-                event,
-              ) =>
-                setEmail(
-                  event.target
-                    .value,
-                )
-              }
-              placeholder="you@impactwater.in"
-              autoComplete="email"
-              required
-            />
-          </label>
+      <section className="iw-login-panel">
+        <div className="iw-login-card">
+          <div className="iw-login-brand mobile-only">
+            <div className="iw-login-logo">IW</div>
+            <span>Impact Water</span>
+          </div>
 
-          <label>
-            Password
+          <h1>Welcome back</h1>
+          <p className="iw-login-sub">
+            Sign in to continue to your workspace.
+          </p>
 
-            <input
-              type="password"
-              value={password}
-              onChange={(
-                event,
-              ) =>
-                setPassword(
-                  event.target
-                    .value,
-                )
-              }
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              required
-            />
-          </label>
-
-          {authError && (
-            <div className="login-error">
-              {authError}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="primary-button"
+          <form
+            className="iw-login-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onLogin();
+            }}
           >
-            Sign in
-          </button>
-        </form>
+            <div className="iw-field">
+              <label htmlFor="iw-email">Email</label>
+              <input
+                id="iw-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@impactwater.in"
+                autoComplete="email"
+                required
+              />
+            </div>
 
-        <div className="login-footer">
-          Internal Impact
-          Water workspace
+            <div className="iw-field">
+              <label htmlFor="iw-password">Password</label>
+
+              <div className="iw-password-wrap">
+                <input
+                  id="iw-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  required
+                />
+
+                <button
+                  type="button"
+                  className="iw-show-btn"
+                  onClick={() => setShowPassword((value) => !value)}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+
+            {authError && (
+              <div className="iw-login-error">{authError}</div>
+            )}
+
+            <button type="submit" className="iw-login-submit">
+              Sign in
+            </button>
+          </form>
+
+          <div className="iw-login-footer">
+            Internal Impact Water workspace
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
